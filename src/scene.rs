@@ -38,10 +38,14 @@ impl Scene {
             .progress_count(self.camera.image_height as u64 * self.camera.image_width as u64)
             .map(|(y, x)| {
                 let mut rng = rand::thread_rng();
-                (0..self.samples)
-                    .map(|_| {
-                        let u = x as f32 + rng.random::<f32>();
-                        let v = y as f32 + rng.random::<f32>();
+                let sqrt_samples = self.samples as f32;
+                let sqrt_samples = sqrt_samples.sqrt().ceil() as u32;
+                let sqrt_samples_recip = (sqrt_samples as f32).recip();
+                (0..sqrt_samples)
+                    .cartesian_product(0..sqrt_samples)
+                    .map(|(x_jitter, y_jitter)| {
+                        let u = x as f32 + (x_jitter as f32 + rng.random::<f32>()) * sqrt_samples_recip;
+                        let v = y as f32 + (y_jitter as f32 + rng.random::<f32>()) * sqrt_samples_recip;
                         let ray = self.camera.get_ray(u, v);
                         self.ray_color(ray, self.max_depth)
                     })
