@@ -5,6 +5,7 @@ pub mod lambertian;
 pub mod metal;
 
 pub use crate::camera::*;
+use crate::pdf::PDF;
 use crate::shape::hittable::HitRecord;
 use crate::texture::*;
 
@@ -17,9 +18,10 @@ pub enum Material {
     DiffuseLight(diffuse_light::DiffuseLight),
 }
 
-pub struct Scattered {
+pub struct Scattered<'a> {
     pub attenuation: Vec3,
     pub scattered: Ray,
+    pub pdf: Option<PDF<'a>>
 }
 
 pub trait Scatters {
@@ -28,6 +30,9 @@ pub trait Scatters {
     }
     fn emitted(&self, _hit_record: &HitRecord) -> Vec3 {
         Vec3::ZERO
+    }
+    fn scattering_pdf(&self, _ray: &Ray, _hit_record: &HitRecord, _scattered: &Ray) -> f32 {
+        0.0
     }
 }
 
@@ -49,6 +54,16 @@ impl Scatters for Material {
             Material::Dielectric(dielectric) => dielectric.emitted(hit_record),
             Material::Lambertian(lambertian) => lambertian.emitted(hit_record),
             Material::DiffuseLight(diffuse_light) => diffuse_light.emitted(hit_record),
+        }
+    }
+
+    fn scattering_pdf(&self, ray: &Ray, hit_record: &HitRecord, scattered: &Ray) -> f32 {
+        match self {
+            Material::Metal(metal) => metal.scattering_pdf(ray, hit_record, scattered),
+            Material::Isotropic(isotropic) => isotropic.scattering_pdf(ray, hit_record, scattered),
+            Material::Dielectric(dielectric) => dielectric.scattering_pdf(ray, hit_record, scattered),
+            Material::Lambertian(lambertian) => lambertian.scattering_pdf(ray, hit_record, scattered),
+            Material::DiffuseLight(diffuse_light) => diffuse_light.scattering_pdf(ray, hit_record, scattered),
         }
     }
 }

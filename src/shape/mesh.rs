@@ -62,6 +62,8 @@ impl Mesh {
             node.aabb.min = node.aabb.min.min(triangle.p1).min(triangle.p2).min(triangle.p3);
             node.aabb.max = node.aabb.max.max(triangle.p1).max(triangle.p2).max(triangle.p3);
         });
+        node.aabb.min = node.aabb.min - Vec3::splat(0.0001);
+        node.aabb.max = node.aabb.max + Vec3::splat(0.0001);
     }
 
     fn subdivide(&mut self, node_index: usize) {
@@ -234,7 +236,6 @@ impl Mesh {
         }
         self.build_bvh();
     }
-    
 }
 
 impl Hittable for Mesh {

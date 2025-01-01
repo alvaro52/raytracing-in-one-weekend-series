@@ -27,6 +27,7 @@ impl Scatters for Metal {
                 hit_record.v,
                 hit_record.hit_point,
             ),
+            pdf: None,
             scattered,
         })
     }

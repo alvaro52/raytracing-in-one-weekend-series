@@ -20,6 +20,13 @@ impl Scatters for Isotropic {
                 util::random_unit_vector(),
                 hit_record.ray.time,
             ),
+            pdf: Some(
+                PDF::sphere()
+            ),
         })
+    }
+
+    fn scattering_pdf(&self, _ray: &Ray, _hit_record: &HitRecord, _scattered: &Ray) -> f32 {
+        1.0 / (4.0 * std::f32::consts::PI)
     }
 }

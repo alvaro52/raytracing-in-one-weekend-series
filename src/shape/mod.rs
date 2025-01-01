@@ -15,6 +15,7 @@ pub enum Shape {
     Sphere(sphere::Sphere),
     Plane(plane::Plane),
     Mesh(mesh::Mesh),
+    List(Vec<Shape>),
 }
 
 impl Hittable for Shape {
@@ -23,8 +24,31 @@ impl Hittable for Shape {
             Shape::Quadrilateral(quadrilateral) => quadrilateral.hits(ray, interval),
             Shape::SmokeCube(smoke_cube) => smoke_cube.hits(ray, interval),
             Shape::Sphere(sphere) => sphere.hits(ray, interval),
+            Shape::List(shapes) => shapes.hits(ray, interval),
             Shape::Plane(plane) => plane.hits(ray, interval),
             Shape::Mesh(mesh) => mesh.hits(ray, interval),
+        }
+    }
+
+    fn pdf_value(&self, origin: &Vec3, direction: &Vec3) -> f32 {
+        match self {
+            Shape::Quadrilateral(quadrilateral) => quadrilateral.pdf_value(origin, direction),
+            Shape::SmokeCube(smoke_cube) => smoke_cube.pdf_value(origin, direction),
+            Shape::Sphere(sphere) => sphere.pdf_value(origin, direction),
+            Shape::List(shapes) => shapes.pdf_value(origin, direction),
+            Shape::Plane(plane) => plane.pdf_value(origin, direction),
+            Shape::Mesh(mesh) => mesh.pdf_value(origin, direction),
+        }
+    }
+
+    fn random(&self, origin: &Vec3) -> Vec3 {
+        match self {
+            Shape::Quadrilateral(quadrilateral) => quadrilateral.random(origin),
+            Shape::SmokeCube(smoke_cube) => smoke_cube.random(origin),
+            Shape::Sphere(sphere) => sphere.random(origin),
+            Shape::List(shapes) => shapes.random(origin),
+            Shape::Plane(plane) => plane.random(origin),
+            Shape::Mesh(mesh) => mesh.random(origin),
         }
     }
 }
@@ -62,5 +86,9 @@ impl Shape {
 
     pub fn mesh(path_to_model: &str, material: Material) -> Self {
         Shape::Mesh(mesh::Mesh::new(path_to_model, material))
+    }
+
+    pub fn list(shapes: Vec<Shape>) -> Self {
+        Shape::List(shapes)
     }
 }

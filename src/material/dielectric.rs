@@ -39,6 +39,7 @@ impl Scatters for Dielectric {
 
         Some(Scattered {
             attenuation: Vec3::ONE,
+            pdf: None,
             scattered,
         })
     }

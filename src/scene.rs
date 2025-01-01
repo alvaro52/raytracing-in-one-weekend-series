@@ -7,11 +7,13 @@ use std::ops::Div;
 
 use crate::camera::builder::CameraBuilder;
 use crate::camera::*;
+use crate::pdf::{ProbabilityDensityFunction, PDF};
 use crate::shape::*;
 
 pub struct Scene {
     pub camera: Camera,
     pub world: Vec<Shape>,
+    pub light: Option<Shape>,
     pub samples: u32,
     pub max_depth: u32,
     pub background_color: Vec3,
@@ -23,6 +25,7 @@ impl Scene {
         Scene {
             camera: CameraBuilder::default().build(),
             world: Vec::new(),
+            light: None,
             samples: 100,
             max_depth: 50,
             background_color: Vec3::new(0.5, 0.7, 1.0),
@@ -49,15 +52,10 @@ impl Scene {
                         let ray = self.camera.get_ray(u, v);
                         self.ray_color(ray, self.max_depth)
                     })
+                    // .map(|vec| if vec.is_nan() { Vec3::ZERO } else { vec })
                     .sum::<Vec3>()
                     .div(self.samples as f32)
-                    .map(|c| {
-                        if c.is_nan() {
-                            0.0
-                        } else {
-                            c.sqrt()
-                        }
-                    })
+                    .map(|c| c.sqrt())
                     .clamp(Vec3::ZERO, Vec3::ONE)
                     .to_array()
                     .map(|c| (c * 255.0) as u8)
@@ -75,8 +73,42 @@ impl Scene {
             None => self.get_background(ray.direction),
             Some(hit_record) => hit_record.material.scatters(&hit_record).map_or_else(
                 || hit_record.material.emitted(&hit_record),
-                |scattered| scattered.attenuation * self.ray_color(scattered.scattered, depth - 1),
+                |mut scattered| {
+                    match self.light.as_ref() {
+                        None => scattered.attenuation * self.ray_color(scattered.scattered, depth - 1),
+                        Some(_) => self.handle_light_pdf(&ray, &hit_record, &mut scattered, depth),
+                    }
+                },
             ),
+        }
+    }
+
+    fn handle_light_pdf(
+        &self,
+        ray: &Ray,
+        hit_record: &HitRecord,
+        scattered: &mut Scattered,
+        depth: u32
+    ) -> Vec3 {
+        let light = self.light.as_ref().unwrap();
+
+        let light_pdf = PDF::hittable(
+            light, &hit_record.hit_point
+        );
+
+        if let Some(ref scattered_pdf) = scattered.pdf {
+            let pdf = PDF::mixture(&light_pdf, &scattered_pdf);
+
+            let scattering_pdf =
+                hit_record.material.scattering_pdf(&ray, &hit_record, &scattered.scattered);
+            let pdf_value = pdf.value(&scattered.scattered.direction);
+
+            (scattered.attenuation *
+                self.ray_color(scattered.scattered, depth - 1) *
+                scattering_pdf) /
+                pdf_value
+        } else {
+            scattered.attenuation * self.ray_color(scattered.scattered, depth - 1)
         }
     }
 

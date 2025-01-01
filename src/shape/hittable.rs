@@ -1,6 +1,7 @@
 pub use crate::camera::ray::*;
 pub use crate::material::*;
 pub use std::ops::Range;
+use rand::prelude::IteratorRandom;
 
 pub struct HitRecord<'a> {
     pub t: f32,
@@ -48,6 +49,12 @@ impl<'a> HitRecord<'a> {
 
 pub trait Hittable {
     fn hits(&self, ray: &Ray, interval: Range<f32>) -> Option<HitRecord>;
+    fn pdf_value(&self, _origin: &Vec3, _direction: &Vec3) -> f32 {
+        0.0
+    }
+    fn random(&self, _origin: &Vec3) -> Vec3 {
+        Vec3::X
+    }
 }
 
 impl<T: Hittable> Hittable for Vec<T> {
@@ -62,5 +69,18 @@ impl<T: Hittable> Hittable for Vec<T> {
         });
 
         hit_record
+    }
+
+    fn pdf_value(&self, origin: &Vec3, direction: &Vec3) -> f32 {
+        let weight = 1.0 / self.len() as f32;
+        self.iter()
+            .map(|shape| shape.pdf_value(origin, direction) * weight)
+            .sum()
+    }
+
+    fn random(&self, origin: &Vec3) -> Vec3 {
+        let mut rng = rand::thread_rng();
+        let shape = self.iter().choose(&mut rng).unwrap();
+        shape.random(origin)
     }
 }

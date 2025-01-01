@@ -1,3 +1,4 @@
+use rand::Rng;
 pub use crate::shape::hittable::*;
 
 #[derive(Clone)]
@@ -9,6 +10,7 @@ pub struct Quadrilateral {
     pub d: f32,
     pub w: Vec3,
     pub material: Material,
+    pub area: f32
 }
 
 impl Quadrilateral {
@@ -17,6 +19,7 @@ impl Quadrilateral {
         let normal = n.normalize();
         let d = normal.dot(starting_corner);
         let w = n / n.length_squared();
+        let area = n.length();
 
         Self {
             starting_corner,
@@ -26,6 +29,7 @@ impl Quadrilateral {
             d,
             w,
             material,
+            area
         }
     }
 
@@ -65,5 +69,24 @@ impl Hittable for Quadrilateral {
         hit_record.set_uv((u, v));
 
         Some(hit_record)
+    }
+
+    fn pdf_value(&self, origin: &Vec3, direction: &Vec3) -> f32 {
+        if let Some(hit_record) = self.hits(&Ray::new(*origin, *direction), 0.001..f32::INFINITY) {
+            let distance_squared = hit_record.t * hit_record.t * direction.length_squared();
+            let cosine = direction.dot(hit_record.normal).abs() / direction.length();
+
+            distance_squared / (cosine * self.area)
+        } else {
+            0.0
+        }
+    }
+
+    fn random(&self, origin: &Vec3) -> Vec3 {
+        let rng = &mut rand::thread_rng();
+        let random_point = self.starting_corner +
+            self.u * rng.random::<f32>() +
+            self.v * rng.random::<f32>();
+        (random_point - *origin).normalize()
     }
 }

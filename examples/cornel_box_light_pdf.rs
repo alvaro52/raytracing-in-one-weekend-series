@@ -6,8 +6,9 @@ use raytracer::shape::mesh::Mesh;
 use raytracer::ui;
 
 fn main() -> eframe::Result {
+
     let mut scene = Scene::new();
-    scene.samples = 100;
+    scene.samples = 10000;
     scene.background_color = Vec3::ZERO;
     scene.camera = CameraBuilder::default()
         .with_aspect_ratio(1.0)
@@ -21,6 +22,7 @@ fn main() -> eframe::Result {
     let green = Material::lambertian_from_vec3(Vec3::new(0.12, 0.45, 0.15));
     let white = Material::lambertian_from_vec3(Vec3::splat(0.73));
     let glass = Material::dielectric(1.5);
+    let empty = Material::default();
 
     scene.world.push(Shape::quadrilateral(
         Vec3::new(555.0, 0.0, 0.0),
@@ -59,23 +61,32 @@ fn main() -> eframe::Result {
         white.clone(),
     ));
 
-    // let mut cube = Mesh::new("assets/cube.obj", white.clone());
-    // cube.scale(Vec3::new(160.0, 160.0, 160.0));
-    // cube.rotate_y(-15.0);
-    // cube.translate(Vec3::new(210.0, 80.0, 180.0));
-    //
-    // scene.world.push(Shape::Mesh(cube));
-
     let sphere = Shape::sphere(Vec3::new(190.0, 90.0, 190.0), 90.0, glass);
 
     scene.world.push(sphere);
 
-    let mut cube = Mesh::new("assets/cube.obj", white.clone());
+    let mut cube = Mesh::new("assets/cube.obj", white);
     cube.scale(Vec3::new(160.0, 320.0, 160.0));
     cube.rotate_y(15.0);
     cube.translate(Vec3::new(340.0, 160.0, 360.0));
 
     scene.world.push(Shape::Mesh(cube));
+
+    scene.light = Some(
+        Shape::list(vec![
+            Shape::quadrilateral(
+                Vec3::new(343.0, 554.0, 332.0),
+                Vec3::new(-130.0, 0.0, 0.0),
+                Vec3::new(0.0, 0.0, -105.0),
+                empty.clone(),
+            ),
+            Shape::sphere(
+                Vec3::new(190.0, 90.0, 190.0),
+                90.0,
+                empty,
+            )
+        ])
+    );
 
     ui::App::run(scene)
 }
